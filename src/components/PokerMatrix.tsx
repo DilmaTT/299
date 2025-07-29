@@ -34,7 +34,8 @@ interface PokerMatrixProps {
   activeAction: string;
   actionButtons: ActionButton[];
   readOnly?: boolean;
-  isBackgroundMode?: boolean; // New prop
+  isBackgroundMode?: boolean;
+  sizeVariant?: 'default' | 'editorPreview'; // New prop for sizing
 }
 
 const getActionColor = (actionId: string, buttons: ActionButton[]): string => {
@@ -49,7 +50,7 @@ const getActionColor = (actionId: string, buttons: ActionButton[]): string => {
   return '#ffffff'; 
 };
 
-export const PokerMatrix = ({ selectedHands, onHandSelect, activeAction, actionButtons, readOnly = false, isBackgroundMode = false }: PokerMatrixProps) => {
+export const PokerMatrix = ({ selectedHands, onHandSelect, activeAction, actionButtons, readOnly = false, isBackgroundMode = false, sizeVariant = 'default' }: PokerMatrixProps) => {
   const isMobile = useIsMobile();
   const [isDragging, setIsDragging] = useState(false);
   const [dragMode, setDragMode] = useState<'select' | 'deselect' | null>(null);
@@ -156,10 +157,16 @@ export const PokerMatrix = ({ selectedHands, onHandSelect, activeAction, actionB
     return '';
   };
 
-  // Adjust parentContainerClasses based on isBackgroundMode
+  // Adjust parentContainerClasses based on isBackgroundMode and sizeVariant
   const parentContainerClasses = cn(
     "space-y-4",
-    isBackgroundMode ? "w-full h-full flex items-center justify-center" : (isMobile ? "w-full !px-0" : "w-[120%]")
+    isBackgroundMode 
+      ? "w-full h-full flex items-center justify-center" 
+      : isMobile 
+        ? "w-full !px-0" 
+        : sizeVariant === 'editorPreview' 
+          ? "w-full" // Fit within dialog for editor preview
+          : "w-[120%]" // Original size for viewer
   );
   
   // Adjust gridClasses for background mode to ensure it scales within its parent

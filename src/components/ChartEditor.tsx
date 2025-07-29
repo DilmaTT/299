@@ -873,7 +873,7 @@ export const ChartEditor = ({ isMobileMode = false, chart, onBackToCharts, onSav
 
         {/* Legend Preview Dialog */}
         <Dialog open={isLegendPreviewOpen} onOpenChange={setIsLegendPreviewOpen}>
-          <DialogContent className="max-w-4xl" onInteractOutside={(e) => e.preventDefault()}>
+          <DialogContent className="max-w-4xl sm:max-h-[90vh] overflow-y-auto" onInteractOutside={(e) => e.preventDefault()}>
             <DialogHeader>
               <DialogTitle>Предпросмотр и редактирование легенды</DialogTitle>
             </DialogHeader>
@@ -886,6 +886,7 @@ export const ChartEditor = ({ isMobileMode = false, chart, onBackToCharts, onSav
                   actionButtons={actionButtons}
                   readOnly={true}
                   isBackgroundMode={false}
+                  sizeVariant="editorPreview"
                 />
                 <div className="mt-4 space-y-3">
                   <h4 className="font-semibold">Редактировать названия:</h4>
