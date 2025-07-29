@@ -96,7 +96,7 @@ export const TrainingSession = ({ training, onStop }: TrainingSessionProps) => {
   const [userMatrix, setUserMatrix] = useState<Record<string, string>>({});
   const [isChecked, setIsChecked] = useState(false);
   const [canProceed, setCanProceed] = useState(false);
-  const [activeAction, setActiveAction] = useState<string>('fold');
+  const [activeAction, setActiveAction] = useState<string>(() => actionButtons[0]?.id || '');
   const [showResultsDialog, setShowResultsDialog] = useState(false);
   const [trainingResults, setTrainingResults] = useState<any>(null);
 
@@ -178,6 +178,15 @@ export const TrainingSession = ({ training, onStop }: TrainingSessionProps) => {
   // Handle border repeat training
   const handleMatrixSelect = (hand: string) => {
     if (isChecked) return;
+
+    if (!activeAction) {
+        toast({
+            title: "Действие не выбрано",
+            description: "Пожалуйста, сначала создайте кнопки действий в редакторе.",
+            variant: "destructive",
+        });
+        return;
+    }
     
     const newMatrix = { ...userMatrix };
     if (newMatrix[hand] === activeAction) {
@@ -235,7 +244,7 @@ export const TrainingSession = ({ training, onStop }: TrainingSessionProps) => {
         setUserMatrix({});
         setIsChecked(false);
         setCanProceed(false);
-        setActiveAction('fold');
+        setActiveAction(actionButtons[0]?.id || '');
       } else {
         finishTraining();
         return;
@@ -362,7 +371,7 @@ export const TrainingSession = ({ training, onStop }: TrainingSessionProps) => {
       {/* Main training area */}
       <div className="flex-1 flex flex-col">
         {/* Mobile header */}
-        <div className="sm:hidden p-4 border-b bg-card">
+        <div className="sm:hidden px-4 py-2 border-b bg-card">
           <div className="flex items-center justify-between">
             <div className="text-lg font-semibold">
               {currentRange.folderName} - {currentRange.name}
@@ -491,8 +500,8 @@ export const TrainingSession = ({ training, onStop }: TrainingSessionProps) => {
               </div>
             ) : (
               // Border repeat training interface
-              <div className="space-y-4 sm:space-y-6">
-                <div className="overflow-x-auto pb-4">
+              <div className="space-y-2 sm:space-y-3">
+                <div className="overflow-x-auto pb-4 -mt-6 sm:mt-0">
                   <PokerMatrix
                     selectedHands={showCorrectRange ? currentRange.hands : userMatrix}
                     onHandSelect={handleMatrixSelect}
@@ -504,18 +513,6 @@ export const TrainingSession = ({ training, onStop }: TrainingSessionProps) => {
 
                 {/* Action selection buttons */}
                 <div className="flex justify-center gap-2 sm:gap-3 flex-wrap px-2 sm:px-4">
-                  <Button
-                    variant={activeAction === 'fold' ? 'secondary' : 'outline'}
-                    size="sm"
-                    onClick={() => setActiveAction('fold')}
-                    disabled={isChecked}
-                    className={cn(
-                      "bg-gray-500 text-white hover:bg-gray-600 text-xs sm:text-sm px-2 sm:px-4",
-                      activeAction === 'fold' && "ring-2 ring-primary"
-                    )}
-                  >
-                    FOLD
-                  </Button>
                   {actionButtons.map((button) => (
                     <Button
                       key={button.id}
@@ -524,7 +521,7 @@ export const TrainingSession = ({ training, onStop }: TrainingSessionProps) => {
                       disabled={isChecked}
                       style={{ backgroundColor: button.color }}
                       className={cn(
-                        "text-white hover:opacity-80 text-xs sm:text-sm px-2 sm:px-4",
+                        "text-white hover:opacity-80 text-xs sm:text-sm px-2 sm:px-4 h-7 py-1",
                         activeAction === button.id && "ring-2 ring-white"
                       )}
                     >
@@ -534,12 +531,15 @@ export const TrainingSession = ({ training, onStop }: TrainingSessionProps) => {
                 </div>
 
                 {/* Control buttons */}
-                <div className="flex justify-center gap-2 sm:gap-4 px-4">
+                <div className="flex justify-center items-center gap-2 sm:gap-4 px-4">
                   <Button
                     onClick={checkBorderRepeat}
                     disabled={isChecked}
                     variant={feedback === 'correct' ? 'default' : feedback === 'incorrect' ? 'destructive' : 'poker'}
-                    className={feedback === 'correct' ? 'bg-green-600 hover:bg-green-700' : ''}
+                    className={cn(
+                      "h-7 py-1",
+                      feedback === 'correct' ? 'bg-green-600 hover:bg-green-700' : ''
+                    )}
                     size="sm"
                   >
                     Проверить
@@ -553,14 +553,11 @@ export const TrainingSession = ({ training, onStop }: TrainingSessionProps) => {
                       <Play className="h-3 w-3" />
                     </Button>
                   )}
-                </div>
-                
-                {/* Завершить тренировку - всегда под кнопками действий */}
-                <div className="text-center mt-4">
                   <Button 
                     onClick={finishTraining} 
                     variant="destructive" 
                     size="sm"
+                    className="h-7 py-1"
                   >
                     Завершить
                   </Button>
