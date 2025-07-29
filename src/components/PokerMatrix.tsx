@@ -53,8 +53,6 @@ export const PokerMatrix = ({ selectedHands, onHandSelect, activeAction, actionB
   const isMobile = useIsMobile();
   const [isDragging, setIsDragging] = useState(false);
   const [dragMode, setDragMode] = useState<'select' | 'deselect' | null>(null);
-  const lastHandEnteredRef = useRef<string | null>(null);
-  const wasDragged = useRef(false);
   const lastHandSelectedDuringDrag = useRef<string | null>(null);
   // Initialize zoomLevel to 0.85 (15% reduction) for desktop, 1 for mobile
   const [zoomLevel, setZoomLevel] = useState<number>(isMobile ? 1 : 0.85);
@@ -70,7 +68,6 @@ export const PokerMatrix = ({ selectedHands, onHandSelect, activeAction, actionB
   const handleDragEnd = () => {
     setIsDragging(false);
     setDragMode(null);
-    lastHandEnteredRef.current = null;
   };
 
   useEffect(() => {
@@ -87,21 +84,23 @@ export const PokerMatrix = ({ selectedHands, onHandSelect, activeAction, actionB
 
   const handlePointerDown = (hand: string) => {
     if (readOnly || isBackgroundMode) return;
-    wasDragged.current = false;
+    
     lastHandSelectedDuringDrag.current = null;
     setIsDragging(true);
-    lastHandEnteredRef.current = hand;
 
     const currentHandAction = selectedHands[hand];
     const mode = currentHandAction === activeAction ? 'deselect' : 'select';
     setDragMode(mode);
+
+    // Apply action immediately on pointer down to select the first cell
+    onHandSelect(hand, mode);
+    lastHandSelectedDuringDrag.current = hand;
   };
 
   const handlePointerEnter = (hand: string) => {
     if (readOnly || isBackgroundMode || !isDragging || !dragMode) return;
     
-    wasDragged.current = true;
-    
+    // Select subsequent cells only if they are different from the last one
     if (lastHandSelectedDuringDrag.current !== hand) {
       onHandSelect(hand, dragMode);
       lastHandSelectedDuringDrag.current = hand;
@@ -117,18 +116,8 @@ export const PokerMatrix = ({ selectedHands, onHandSelect, activeAction, actionB
 
     if (element instanceof HTMLElement && element.dataset.hand) {
       const hand = element.dataset.hand;
-      wasDragged.current = true; // Mark as dragged on any move
       handlePointerEnter(hand);
     }
-  };
-
-  const handleClick = (hand: string) => {
-    if (readOnly || isBackgroundMode) return;
-    if (wasDragged.current) return; // Don't fire click after a drag
-
-    const currentHandAction = selectedHands[hand];
-    const mode = currentHandAction === activeAction ? 'deselect' : 'select';
-    onHandSelect(hand, mode);
   };
 
   const getHandStyle = (hand: string) => {
@@ -204,7 +193,6 @@ export const PokerMatrix = ({ selectedHands, onHandSelect, activeAction, actionB
               getHandColorClass(hand)
             )}
             style={getHandStyle(hand)}
-            onClick={() => handleClick(hand)}
             onMouseDown={() => handlePointerDown(hand)}
             onMouseEnter={() => handlePointerEnter(hand)}
             onTouchStart={() => handlePointerDown(hand)}

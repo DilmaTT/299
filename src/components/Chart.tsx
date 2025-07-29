@@ -27,7 +27,8 @@ export interface ChartButton {
   isFontAdaptive?: boolean;
   fontSize?: number;
   fontColor?: 'white' | 'black';
-  showLegend?: boolean; // Add the new legend property
+  showLegend?: boolean;
+  legendOverrides?: Record<string, string>; // To store custom legend names
 }
 
 // Define the interface for a stored chart configuration

@@ -22,6 +22,33 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useRangeContext } from "@/contexts/RangeContext";
 import { StoredChart, ChartButton } from "./Chart"; // Import interfaces
+import { ActionButton as ActionButtonType } from "@/contexts/RangeContext";
+import { PokerMatrix } from "@/components/PokerMatrix";
+
+// Helper function to get the color for a simple action
+const getActionColor = (actionId: string, allButtons: ActionButtonType[]): string => {
+  if (actionId === 'fold') return '#6b7280';
+  const button = allButtons.find(b => b.id === actionId);
+  if (button && button.type === 'simple') {
+    return button.color;
+  }
+  return '#ffffff'; // Fallback color
+};
+
+// Helper function to get the style for any action button (simple or weighted)
+const getActionButtonStyle = (button: ActionButtonType, allButtons: ActionButtonType[]) => {
+  if (button.type === 'simple') {
+    return { backgroundColor: button.color };
+  }
+  if (button.type === 'weighted') {
+    const color1 = getActionColor(button.action1Id, allButtons);
+    const color2 = getActionColor(button.action2Id, allButtons);
+    return {
+      background: `linear-gradient(to right, ${color1} ${button.weight}%, ${color2} ${button.weight}%)`,
+    };
+  }
+  return {};
+};
 
 interface ChartEditorProps {
   isMobileMode?: boolean;
@@ -31,7 +58,7 @@ interface ChartEditorProps {
 }
 
 export const ChartEditor = ({ isMobileMode = false, chart, onBackToCharts, onSaveChart }: ChartEditorProps) => {
-  const { folders } = useRangeContext();
+  const { folders, actionButtons } = useRangeContext();
   const allRanges = folders.flatMap(folder => folder.ranges);
 
   const [chartName, setChartName] = useState(chart.name);
@@ -40,6 +67,8 @@ export const ChartEditor = ({ isMobileMode = false, chart, onBackToCharts, onSav
   const [canvasHeight, setCanvasHeight] = useState(chart.canvasHeight || 500); // Initialize from chart or default
   const [isButtonModalOpen, setIsButtonModalOpen] = useState(false);
   const [editingButton, setEditingButton] = useState<ChartButton | null>(null);
+  const [isLegendPreviewOpen, setIsLegendPreviewOpen] = useState(false);
+  const [tempLegendOverrides, setTempLegendOverrides] = useState<Record<string, string>>({});
 
   // Drag & Resize states
   const [activeButtonId, setActiveButtonId] = useState<string | null>(null);
@@ -110,7 +139,8 @@ export const ChartEditor = ({ isMobileMode = false, chart, onBackToCharts, onSav
       isFontAdaptive: true,
       fontSize: 16,
       fontColor: 'white',
-      showLegend: false, // Default legend to false
+      showLegend: false,
+      legendOverrides: {},
     };
     setButtons((prev) => [...prev, newButton]);
     setEditingButton(newButton);
@@ -480,6 +510,39 @@ export const ChartEditor = ({ isMobileMode = false, chart, onBackToCharts, onSav
     }
   };
 
+  // --- Legend Preview Logic ---
+  const handleOpenLegendPreview = () => {
+    if (editingButton) {
+      setTempLegendOverrides(editingButton.legendOverrides || {});
+      setIsLegendPreviewOpen(true);
+    }
+  };
+
+  const handleSaveLegendOverrides = () => {
+    const cleanedOverrides: Record<string, string> = {};
+    for (const key in tempLegendOverrides) {
+      // Store only non-empty overrides. An empty string means "use default".
+      if (tempLegendOverrides[key] && tempLegendOverrides[key].trim() !== '') {
+        cleanedOverrides[key] = tempLegendOverrides[key].trim();
+      }
+    }
+
+    setEditingButton(prev => {
+      if (!prev) return null;
+      return { ...prev, legendOverrides: cleanedOverrides };
+    });
+    setIsLegendPreviewOpen(false);
+  };
+
+  const linkedRangeForPreview = editingButton?.linkedItem ? allRanges.find(r => r.id === editingButton.linkedItem) : null;
+
+  const actionsInPreviewedRange = React.useMemo(() => {
+    if (!linkedRangeForPreview) return [];
+    const usedActionIds = new Set(Object.values(linkedRangeForPreview.hands));
+    return actionButtons.filter(action => usedActionIds.has(action.id));
+  }, [linkedRangeForPreview, actionButtons]);
+  // --- End Legend Preview Logic ---
+
   const Controls = (
     <div className={cn(
       "flex flex-col", // Main container for controls
@@ -622,7 +685,10 @@ export const ChartEditor = ({ isMobileMode = false, chart, onBackToCharts, onSav
           </>
         )}
 
-        <Dialog open={isButtonModalOpen} onOpenChange={setIsButtonModalOpen}>
+        <Dialog open={isButtonModalOpen} onOpenChange={(isOpen) => {
+          if (!isOpen) handleCancelButtonProperties();
+          else setIsButtonModalOpen(true);
+        }}>
           <DialogContent mobileFullscreen={isMobileMode}>
             <DialogHeader>
               <DialogTitle>Настройка кнопки</DialogTitle>
@@ -784,6 +850,16 @@ export const ChartEditor = ({ isMobileMode = false, chart, onBackToCharts, onSav
                     <Label htmlFor="showLegend" className="font-normal">
                         Показать легенду
                     </Label>
+                    {editingButton?.showLegend && editingButton?.type === 'normal' && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 ml-2"
+                        onClick={handleOpenLegendPreview}
+                      >
+                        Предпросмотр
+                      </Button>
+                    )}
                 </div>
               </div>
 
@@ -791,6 +867,48 @@ export const ChartEditor = ({ isMobileMode = false, chart, onBackToCharts, onSav
             <DialogFooter>
               <Button variant="outline" onClick={handleCancelButtonProperties}>Отмена</Button>
               <Button onClick={handleSaveButtonProperties}>Сохранить</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Legend Preview Dialog */}
+        <Dialog open={isLegendPreviewOpen} onOpenChange={setIsLegendPreviewOpen}>
+          <DialogContent className="max-w-4xl" onInteractOutside={(e) => e.preventDefault()}>
+            <DialogHeader>
+              <DialogTitle>Предпросмотр и редактирование легенды</DialogTitle>
+            </DialogHeader>
+            {linkedRangeForPreview && (
+              <div>
+                <PokerMatrix
+                  selectedHands={linkedRangeForPreview.hands}
+                  onHandSelect={() => {}}
+                  activeAction=""
+                  actionButtons={actionButtons}
+                  readOnly={true}
+                  isBackgroundMode={false}
+                />
+                <div className="mt-4 space-y-3">
+                  <h4 className="font-semibold">Редактировать названия:</h4>
+                  {actionsInPreviewedRange.map(action => (
+                    <div key={action.id} className="grid grid-cols-[auto_1fr] items-center gap-4">
+                      <div className="flex items-center gap-2 whitespace-nowrap">
+                        <div className="w-4 h-4 rounded-sm border flex-shrink-0" style={getActionButtonStyle(action, actionButtons)} />
+                        <Label htmlFor={`legend-override-${action.id}`}>{action.name}:</Label>
+                      </div>
+                      <Input
+                        id={`legend-override-${action.id}`}
+                        value={tempLegendOverrides[action.id] || ''}
+                        onChange={(e) => setTempLegendOverrides(prev => ({ ...prev, [action.id]: e.target.value }))}
+                        placeholder={`По умолчанию: ${action.name}`}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsLegendPreviewOpen(false)}>Отмена</Button>
+              <Button onClick={handleSaveLegendOverrides}>Сохранить легенду</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

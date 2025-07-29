@@ -32,7 +32,15 @@ const getActionButtonStyle = (button: ActionButtonType, allButtons: ActionButton
 };
 
 // Legend Component
-const Legend = ({ usedActions, allActionButtons }: { usedActions: ActionButtonType[], allActionButtons: ActionButtonType[] }) => {
+const Legend = ({
+  usedActions,
+  allActionButtons,
+  legendOverrides,
+}: {
+  usedActions: ActionButtonType[];
+  allActionButtons: ActionButtonType[];
+  legendOverrides?: Record<string, string>;
+}) => {
   if (usedActions.length === 0) return null;
 
   return (
@@ -43,7 +51,9 @@ const Legend = ({ usedActions, allActionButtons }: { usedActions: ActionButtonTy
             className="w-4 h-4 rounded-sm border"
             style={getActionButtonStyle(action, allActionButtons)}
           />
-          <span className="text-sm font-medium">{action.name}</span>
+          <span className="text-sm font-medium">
+            {legendOverrides?.[action.id] || action.name}
+          </span>
         </div>
       ))}
     </div>
@@ -251,7 +261,13 @@ export const ChartViewer = ({ isMobileMode = false, chart, allRanges, onBackToCh
                 readOnly={true}
                 isBackgroundMode={false}
               />
-              {activeButton?.showLegend && <Legend usedActions={usedActions} allActionButtons={actionButtons} />}
+              {activeButton?.showLegend && (
+                <Legend
+                  usedActions={usedActions}
+                  allActionButtons={actionButtons}
+                  legendOverrides={activeButton?.legendOverrides}
+                />
+              )}
             </div>
           )}
       </CustomDialog>

@@ -479,11 +479,14 @@ export const RangeEditor = ({ isMobileMode = false }: RangeEditorProps) => {
   const { folder: currentFolder, range: currentRange } = getCurrentRangeAndFolder();
 
   const getSelectedCombinationsCount = () => {
-    if (!currentRange) return 0;
+    if (!currentRange || !currentRange.hands) {
+      return 0;
+    }
     let count = 0;
     Object.entries(currentRange.hands).forEach(([hand, action]) => {
-      if (action && action !== 'fold') {
-        count += getCombinations(hand);
+      const combinations = getCombinations(hand);
+      if (action && action !== 'fold' && typeof combinations === 'number' && !isNaN(combinations)) {
+        count += combinations;
       }
     });
     return count;
