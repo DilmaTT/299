@@ -501,7 +501,7 @@ export const TrainingSession = ({ training, onStop }: TrainingSessionProps) => {
             ) : (
               // Border repeat training interface
               <div className="space-y-2 sm:space-y-3">
-                <div className="overflow-x-auto pb-4 -mt-6 sm:mt-0">
+                <div className="overflow-x-auto pb-1 -mt-6 sm:mt-0">
                   <PokerMatrix
                     selectedHands={showCorrectRange ? currentRange.hands : userMatrix}
                     onHandSelect={handleMatrixSelect}
@@ -568,20 +568,20 @@ export const TrainingSession = ({ training, onStop }: TrainingSessionProps) => {
         </div>
 
         {/* Mobile stats footer */}
-        <div className="sm:hidden p-3 border-t bg-card">
-          <div className="grid grid-cols-3 gap-2 text-center text-sm">
+        <div className="sm:hidden p-0 border-t bg-card">
+          <div className="grid grid-cols-3 gap-1 text-center">
             <div>
-              <div className="text-base font-bold text-primary">{formatTime()}</div>
+              <div className="text-sm font-bold text-primary">{formatTime()}</div>
               <div className="text-xs text-muted-foreground">Время</div>
             </div>
             
             <div>
-              <div className="text-base font-bold text-primary">{sessionStats.accuracy.toFixed(1)}%</div>
+              <div className="text-sm font-bold text-primary">{sessionStats.accuracy.toFixed(1)}%</div>
               <div className="text-xs text-muted-foreground">Точность</div>
             </div>
             
             <div>
-              <div className="text-base font-bold text-primary">{sessionStats.hands.length}</div>
+              <div className="text-sm font-bold text-primary">{sessionStats.hands.length}</div>
               <div className="text-xs text-muted-foreground">
                 {training.type === 'classic' ? 'Рук' : 'Ренжей'}
               </div>
